@@ -1,0 +1,31 @@
+.git/
+.gitignore
+.DS_Store
+__pycache__/
+*.py[cod]
+*.so
+.Python
+env/
+My_Env/
+
+# Node/Frontend
+node_modules/
+frontend/
+
+# Environment (Keep local env files out of the image)
+.env
+.venv
+venv/
+
+# Docker Files
+docker-compose.yml
+backend.Dockerfile
+
+# Local Volume/Uploads (Prevent copying local uploads into the image)
+server_uploads/
+server_rag_uploads/
+app/uploads/
+uploads/
+
+# Jupyter Files
+*.ipynb

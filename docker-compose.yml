@@ -1,0 +1,33 @@
+services:
+  redis:
+    image: redis:alpine
+    container_name: rag_saas_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - bot_network
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    container_name: rag_saas_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Inject Docker socket so sandbox tool can spawn containers dynamically
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Persist normal chat uploads
+      - ./server_uploads:/app/app/uploads
+      # Persist RAG specific uploads (even though they get deleted, it maps the folder)
+      - ./server_rag_uploads:/app/uploads
+    env_file:
+      - backend/.env
+    restart: unless-stopped
+    networks:
+      - bot_network
+
+networks:
+  bot_network:
+    driver: bridge

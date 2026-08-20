@@ -1,0 +1,29 @@
+# Environment variables (CRITICAL)
+.env
+backend/.env
+*.env
+
+# SSH Keys and secrets
+*.key
+*.pem
+*.pub
+ssh-key-*
+
+# Uploads & Data
+server_uploads/
+server_rag_uploads/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+
+# Frontend (Already in a separate repo)
+frontend/
+
+# Notebooks & Temporary files
+*.ipynb
+architecture.txt
+
+# OS files
+.DS_Store
