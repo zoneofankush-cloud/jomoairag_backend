@@ -90,15 +90,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
-    #docs_url=None,
-    #redoc_url=None,
-    #openapi_url=None
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["null", "https://jomoai.pages.dev", "https://jomoairag.pages.dev"],
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?|https://.*\.jomoai\.pages\.dev|https://.*\.jomoairag\.pages\.dev",
+    allow_origins=["null", "https://jomoairag.pages.dev"],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?|https://.*\.jomoairag\.pages\.dev",
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["X-Chat-Title"],

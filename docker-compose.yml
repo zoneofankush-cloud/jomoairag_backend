@@ -23,7 +23,7 @@ services:
       # Persist RAG specific uploads (even though they get deleted, it maps the folder)
       - ./server_rag_uploads:/app/uploads
     env_file:
-      - backend/.env
+      - .env
     restart: unless-stopped
     networks:
       - bot_network
