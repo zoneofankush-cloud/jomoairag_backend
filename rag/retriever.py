@@ -57,7 +57,7 @@ async def DecissionNode(retriever, query: str, user_id: str, model, history: str
     - dont_know:     If the question do not belongs to the relavant vector search 
                     and is blank and completely irrelevant to {PDF}reply dont_know.
     """
-    smart_router = (await structured_model.ainvoke(prompt, config={"tags": ["hide_stream"]})).smart_router
+    smart_router = (await structured_model.ainvoke(prompt)).smart_router
 
     return smart_router, doc
 

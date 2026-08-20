@@ -247,8 +247,6 @@ async def response(prompt: PromptValue, thread_id: str, model_version: str, requ
                 #==============================================================================
                 #=========================== Proper Text Streaming ============================
                 if metadata.get("langgraph_node") == "chat_node" and chunk.type in ("ai", "AIMessageChunk"): # type: ignore
-                    if "hide_stream" in metadata.get("tags", []):
-                        continue
                     if isinstance(chunk.content, str) and chunk.content: # type: ignore
                         yield chunk.content # type: ignore
                     elif isinstance(chunk.content, list): # type: ignore
