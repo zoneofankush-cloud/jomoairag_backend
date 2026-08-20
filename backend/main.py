@@ -97,8 +97,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["null", "https://jomoai.pages.dev"],
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?|https://.*\.jomoai\.pages\.dev",
+    allow_origins=["null", "https://jomoai.pages.dev", "https://jomoairag.pages.dev"],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?|https://.*\.jomoai\.pages\.dev|https://.*\.jomoairag\.pages\.dev",
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["X-Chat-Title"],
