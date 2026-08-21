@@ -1,0 +1,145 @@
+==================================================
+COGS & FINANCIAL DATABASE SCHEMA TRACKER
+==================================================
+This document tracks the database schemas and logic for the SaaS Cost Management App. It will be updated continuously as we build out the financial tracking features.
+
+--------------------------------------------------
+1. LLM COST TRACKING (Daily Ledger)
+--------------------------------------------------
+Status: Ready for deployment.
+
+SQL Schema (PostgreSQL):
+```sql
+CREATE TABLE user_cogs (
+    id SERIAL PRIMARY KEY,
+    date DATE DEFAULT CURRENT_DATE,
+    user_id VARCHAR NOT NULL,
+    email VARCHAR NOT NULL,
+    llm_name VARCHAR NOT NULL,
+    input_tokens BIGINT DEFAULT 0,
+    output_tokens BIGINT DEFAULT 0,
+    llm_cost NUMERIC(10, 6) DEFAULT 0.000000,
+    db_storage_bytes BIGINT DEFAULT 0,
+    db_storage_cost NUMERIC(10, 6) DEFAULT 0.000000,
+    UNIQUE (date, user_id, llm_name)
+);
+```
+
+Backend Logic (Python/FastAPI Upsert):
+```python
+# LLM Cost formula (Example for Gemini 3.1 Flash Lite)
+# Cost = (input_tokens / 1,000,000 * 0.25) + (output_tokens / 1,000,000 * 1.50)
+
+# SQL Execution
+"""
+INSERT INTO user_cogs (date, user_id, email, llm_name, input_tokens, output_tokens, llm_cost)
+VALUES (CURRENT_DATE, %s, %s, %s, %s, %s, %s)
+ON CONFLICT (date, user_id, llm_name)
+DO UPDATE SET 
+    input_tokens = user_cogs.input_tokens + EXCLUDED.input_tokens,
+    output_tokens = user_cogs.output_tokens + EXCLUDED.output_tokens,
+    llm_cost = user_cogs.llm_cost + EXCLUDED.llm_cost
+"""
+```
+
+--------------------------------------------------
+2. COMPUTE COST & USER ACTIVITY TRACKING (Deferred)
+--------------------------------------------------
+Status: Pending (To be built later as a separate tracking module)
+
+Note: We concluded that Oracle VM is a fixed monthly/hourly cost, making exact micro-costing per user technically inaccurate and unnecessary for now.
+Instead of tracking exact Compute $ per user, we will later create a separate table (e.g., `user_activity_logs`) to track:
+- User Activity (API hits, chat count)
+- Timestamps (When the user is most active)
+This will help measure which user causes the most server load without forcing a synthetic $ cost onto them.
+
+--------------------------------------------------
+3. DATABASE (SUPABASE) COST TRACKING
+--------------------------------------------------
+Status: Partial Implementation (Storage only)
+
+Analysis of Supabase Pricing Vectors:
+- Auth (MAU): N/A (Project uses custom JWT auth, bypassing Supabase Auth limits).
+- Compute: Fixed cost (Handled similar to Oracle VM, deferred).
+- Egress (Bandwidth): Highly dynamic and difficult to trace per user at the SQL level. Deferred for now.
+- Storage: Exact measurement using PostgreSQL `pg_column_size()`.
+
+SQL Strategy for Storage Tracking (Method 2):
+Instead of estimating, we will run a precise calculation of the bytes consumed by a user across all relevant tables (embeddings, threads, memory, checkpoints).
+We will add a `db_storage_bytes` BIGINT column to our tracking tables, updating it via a daily cron job.
+
+Backend Logic (Python/FastAPI Cron Job):
+```python
+import asyncio
+
+async def update_daily_db_storage():
+    """
+    Ye script raat ko chalegi aur har user ka exact DB size (Vectors + Chat + Memory) 
+    calculate karke user_cogs table me update karegi.
+    """
+    try:
+        async with async_pool.connection() as conn:
+            
+            # STEP 1: Saare active users nikalna jinka DB me data hai
+            cur = await conn.execute("SELECT DISTINCT user_id FROM threads")
+            active_users = await cur.fetchall()
+            
+            for row in active_users:
+                user_id = str(row['user_id'])
+                prefix_pattern = f"%{user_id}%"
+                
+                # STEP 2: Master SQL Query jo har table (Vectors, Threads, LSTM Memory) 
+                # se user ka exact BYTES nikalegi `pg_column_size()` use karke.
+                calc_query = """
+                    SELECT 
+                        (SELECT COALESCE(SUM(pg_column_size(t.*)), 0) FROM langchain_pg_embedding t WHERE cmetadata->>'user_id' = %s) +
+                        (SELECT COALESCE(SUM(pg_column_size(t.*)), 0) FROM threads t WHERE user_id = %s) +
+                        (SELECT COALESCE(SUM(pg_column_size(t.*)), 0) FROM store t WHERE prefix LIKE %s) 
+                    AS total_bytes_used
+                """
+                
+                size_cur = await conn.execute(calc_query, (user_id, user_id, prefix_pattern))
+                size_result = await size_cur.fetchone()
+                total_bytes = size_result['total_bytes_used'] if size_result else 0
+                
+                # STEP 3: Bytes ko GB me convert karna aur Supabase Cost ($0.125/GB) nikalna
+                total_gb = total_bytes / (1024 * 1024 * 1024)
+                db_cost = total_gb * 0.125
+                
+                # STEP 4: DB Table me Update marna (Jo bhi us din ki user ki row hogi)
+                update_query = """
+                    UPDATE user_cogs 
+                    SET db_storage_bytes = %s, db_storage_cost = %s 
+                    WHERE user_id = %s AND date = CURRENT_DATE
+                """
+                await conn.execute(update_query, (total_bytes, db_cost, user_id))
+                
+            await conn.commit()
+    except Exception as e:
+        print(f"Error calculating DB storage: {e}")
+```
+
+--------------------------------------------------
+4. CLOUDFLARE R2 (S3) & PAGES COST 
+--------------------------------------------------
+Status: Ignored (Calculated as negligible operational overhead)
+
+Reasoning:
+1. Web Hosting (Cloudflare Pages): We are serving a static front-end which is completely free on Cloudflare. Cost = $0.
+2. Object Storage (Cloudflare R2): 
+   - A strict hard cap of 100MB per user is enforced on the backend.
+   - Users must manually delete old files to upload new ones if they hit the cap.
+   - Worst Case Scenario: 1,000 users maxing out their 100MB quota = 100GB total storage.
+   - R2 Free Tier = 10GB/month. 
+   - Overage = 90GB * $0.015 = ~$1.35/month.
+Conclusion: The per-user cost is so infinitesimally small (fraction of a cent) that the compute and database overhead required to track it per user is actually more expensive than the storage cost itself. We will treat this $1.35 as a negligible operational overhead rather than a tracked COGS metric.
+
+--------------------------------------------------
+5. SEARCH API COST (Tavily -> SearxNG)
+--------------------------------------------------
+Status: Replaced & Free ($0)
+
+Reasoning:
+Initially, we planned to track the cost of external search APIs (like Tavily) which charge per query. However, to optimize the business model, we successfully deployed a self-hosted instance of **SearxNG** via Docker on the same Oracle VM. 
+Because SearxNG is open-source and leverages our existing compute resources, our per-query search cost has dropped entirely to $0.
+No COGS tracking is required for web search anymore.

@@ -29,3 +29,5 @@ uploads/
 
 # Jupyter Files
 *.ipynb
+
+*.md

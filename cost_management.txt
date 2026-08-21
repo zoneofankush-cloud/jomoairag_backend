@@ -1,0 +1,45 @@
+Cost Management & Financial Architecture
+==================================================
+
+1. COGS (Cost of Goods Sold) / Direct Operational Costs
+(Scales directly with users - Tracked for Unit Economics)
+--------------------------------------------------
+- LLM API Cost: OpenAI/Gemini (Input/Output tokens)
+- Search API Cost: Tavily API requests per query
+- SMS/Communication: OTPs via SMS (Twilio, MSG91)
+- Cloud Infra (Compute): Oracle Cloud VM charges
+- Database & Storage: Supabase (PostgreSQL scaling) & Cloudflare R2
+- Bandwidth & Requests: Cloudflare Pages/Workers requests
+- Payment Gateway Fees: Stripe/Razorpay (2-3% per transaction)
+
+2. OPEX (Operating Expenses) / Fixed & Variable Overheads
+(Day-to-day business expenses in P&L)
+--------------------------------------------------
+- Payroll & HR: Founder Salary / Employee Salaries
+- Office & Infra: Office rent, Electricity, Internet/Broadband
+- Software Subscriptions: GitHub Pro, ChatGPT Plus, Cursor/Copilot, UI Tools (Canva/Figma), Accounting Software
+- Domain & SSL: Yearly renewals (.com, .ai)
+- Marketing & Sales: Ads, SEO tools, Email marketing
+- Miscellaneous: Bank charges, Refunds, Chargebacks
+
+3. Legal, Compliance & Audit (Professional Fees)
+(To keep the company legally compliant)
+--------------------------------------------------
+- Setup / Advisory: Terms of Service, Privacy Policies, NDAs
+- Compliance Retainers: CA/CS monthly/quarterly fees (TDS/GST)
+- Audit Fees: Annual Report, Balance sheet signing, Statutory Audit
+- ROC / MCA Filings: Annual Ministry of Corporate Affairs fees
+
+4. CAPEX (Capital Expenditure) & Depreciation
+(Balance Sheet Assets)
+--------------------------------------------------
+- Incorporation Cost: One-time company setup (Amortized)
+- Equipment & Hardware: Laptops, servers, office furniture
+- Depreciation: Yearly value reduction of hardware (Non-cash expense)
+
+5. Taxes & Provisions
+(Calculated on Net Profits)
+--------------------------------------------------
+- Corporate Income Tax: Tax on net profit
+- GST (Goods & Services Tax): 18% Output liability minus Input Tax Credit (ITC)
+- TDS: Withholding tax on employee salaries and professional fees

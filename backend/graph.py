@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from tools.sandbox import python_docker_sandbox
-from tools.core import search_tool, demand_history, time_tool
+from tools.core import search_tool, demand_history, time_tool, search_engine, fetch_webpage
 from tools.emails import Send_Email, fetch_emails
 from tools.finance import stock_price
 from tools.files import read_document,load_pdf_document,ipynb_file_reader,\
@@ -68,7 +68,7 @@ async def memory_state(state: MessagesState, store: BaseStore, config: RunnableC
             await store.aput(user_details, fact.topic, {'data': fact.info})
     return {}
 
-tools = [search_tool, demand_history, time_tool, stock_price, ipynb_file_reader, read_image, 
+tools = [search_tool, search_engine, fetch_webpage, demand_history, time_tool, stock_price, ipynb_file_reader, read_image, 
          read_excel_file, read_html_file, read_xml_file,
          python_docker_sandbox, fetch_emails, Send_Email, read_document, load_pdf_document]
 
@@ -80,7 +80,7 @@ tool_node = ToolNode(tools)
 def select_active_tools(user_query: str):
     user_query = user_query.lower()
     
-    active_tools = [search_tool, demand_history, time_tool]
+    active_tools = [search_tool, search_engine, fetch_webpage, demand_history, time_tool]
     
     if any(keyword in user_query for keyword in ["stock", "price", "market", "finance"]):
         active_tools.append(stock_price)

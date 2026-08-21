@@ -11,6 +11,10 @@ TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 #=======================  Module Imports =========================
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
+import asyncio, ipaddress, socket, trafilatura
+from urllib.parse import urlparse
+from langchain_core.tools import tool
+from langchain_community.utilities import SearxSearchWrapper
 from langchain_core.runnables import RunnableConfig
 from langchain_tavily import TavilySearch
 from langchain.tools import tool
@@ -31,6 +35,69 @@ async def search_tool(n: int, query: str):
             return await DuckDuckGoSearchRun(api_wrapper=DuckDuckGoSearchAPIWrapper(max_results=n)).ainvoke(query)
         except Exception:
             return "No results found"
+
+@tool
+async def search_engine(query: str, n: int):
+    """Search the web, returns top N results (title, url, snippet).
+    Use first for any current/factual info. Snippet is usually enough —
+    only use fetch_webpage after this if snippet lacks needed detail.
+    """
+    try:
+        searx = SearxSearchWrapper(searx_host="http://searxng:8080")
+        result = await searx.aresults(query=query, num_results=n)
+        return result
+    except Exception as e:
+        return {"error": f"Search failed: {e}"}
+
+# Blacklist for Internal and Cloud Metadata IPs
+BLOCKED_HOSTS = {"localhost", "127.0.0.1", "169.254.169.254"}
+
+def is_safe_url(url: str) -> bool:
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        return False
+
+    hostname = parsed.hostname
+    if not hostname or hostname in BLOCKED_HOSTS:
+        return False
+
+    try:
+        ip = socket.gethostbyname(hostname)
+        ip_obj = ipaddress.ip_address(ip)
+        # Blocks internal network, loopback, and Oracle cloud metadata IPs
+        if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local:
+            return False
+    except socket.gaierror:
+        return False
+
+    return True
+
+
+def _extract_sync(url: str) -> str:
+    if not is_safe_url(url):
+        return "ERROR: URL is blocked for security reasons (SSRF Protection)."
+        
+    downloaded = trafilatura.fetch_url(url)
+    if not downloaded:
+        return ""
+    text = trafilatura.extract(downloaded)
+    return text or ""
+
+@tool
+async def fetch_webpage(url: str) -> str:
+    """Fetch full text of one webpage. Use only after search_engine,
+    and only for 1-2 most relevant URLs when snippets weren't enough.
+    URL must come from search_engine results.
+    """
+    try:
+        content = await asyncio.to_thread(_extract_sync, url)
+        if not content:
+            return "Could not extract readable content from this page."
+            
+        # Isolate content to prevent Prompt Injection
+        return f"<fetched_content>\n{content}\n</fetched_content>"
+    except Exception as e:
+        return f"Error fetching page: {e}"
 
 
 #=================================================================
