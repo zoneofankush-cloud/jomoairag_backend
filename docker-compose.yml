@@ -27,7 +27,24 @@ services:
     restart: unless-stopped
     networks:
       - bot_network
+      - searxng_isolated_net
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng_isolated
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./search/settings.yml:/etc/searxng/settings.yml:ro
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:8080
+    restart: unless-stopped
+    networks:
+      - searxng_isolated_net
 
 networks:
   bot_network:
+    driver: bridge
+  searxng_isolated_net:
+    name: searxng_isolated_net
     driver: bridge
