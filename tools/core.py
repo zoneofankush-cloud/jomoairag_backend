@@ -36,6 +36,10 @@ async def search_tool(n: int, query: str):
         except Exception:
             return "No results found"
 
+def _searx_sync(query: str, n: int):
+    searx = SearxSearchWrapper(searx_host="http://searxng:8080")
+    return searx.results(query=query, num_results=n)
+
 @tool
 async def search_engine(query: str, n: int):
     """Search the web, returns top N results (title, url, snippet).
@@ -43,8 +47,7 @@ async def search_engine(query: str, n: int):
     only use fetch_webpage after this if snippet lacks needed detail.
     """
     try:
-        searx = SearxSearchWrapper(searx_host="http://searxng:8080")
-        result = await searx.aresults(query=query, num_results=n)
+        result = await asyncio.to_thread(_searx_sync, query, n)
         return result
     except Exception as e:
         return {"error": f"Search failed: {e}"}

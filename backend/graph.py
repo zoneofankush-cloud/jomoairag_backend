@@ -176,7 +176,7 @@ async def chat_node(state: MessagesState, store: BaseStore, config: RunnableConf
 
     sys = "" 
     human = None 
-    
+      
     if smart_router == 'deep_search':
         sys, human = await deep_search_node(query=user_query_text, doc=doc, history=history_string, user_id=user_id)
     elif smart_router == 'general_query':

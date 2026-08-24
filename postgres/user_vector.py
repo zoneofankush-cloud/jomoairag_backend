@@ -18,6 +18,8 @@ from langchain_community.document_loaders import DirectoryLoader
 from langchain_pymupdf4llm import PyMuPDF4LLMLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_postgres import PGVector
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import create_engine
 from langchain_community.storage import SQLStore
 from langchain_classic.storage import create_lc_store
 from langchain_classic.retrievers import ParentDocumentRetriever
@@ -185,10 +187,16 @@ async def User_Embedder(user_id: str = Depends(get_current_user)):
     parent_splitter = RecursiveCharacterTextSplitter(chunk_size=config['parent_chunk_size'], chunk_overlap=config['parent_chunk_overlap']) # type: ignore
     child_splitter  = RecursiveCharacterTextSplitter(chunk_size=config['child_chunk_size'], chunk_overlap=config['child_chunk_overlap']) # type: ignore
 
+    db_engine = create_engine(
+        user_db_url.replace("postgresql://", "postgresql+psycopg://"),
+        pool_pre_ping=True,
+        pool_recycle=1800
+    )
+
     vector_store = PGVector(
         embeddings=embedder, # type: ignore
         collection_name=f"custom_{user_id}_{selected_embedder.replace('-', '_')}",
-        connection=user_db_url.replace("postgresql://", "postgresql+psycopg://"), 
+        connection=db_engine, 
         use_jsonb=True
     )
 
@@ -243,10 +251,16 @@ async def User_Retriever(user_id: str = Depends(get_current_user)):
     parent_splitter = RecursiveCharacterTextSplitter(chunk_size=config['parent_chunk_size'], chunk_overlap=config['parent_chunk_overlap'], add_start_index=True) # type: ignore
     child_splitter  = RecursiveCharacterTextSplitter(chunk_size=config['child_chunk_size'], chunk_overlap=config['child_chunk_overlap'], add_start_index=True) # type: ignore
 
+    async_db_engine = create_async_engine(
+        user_db_url.replace("postgresql://", "postgresql+psycopg://"),
+        pool_pre_ping=True,
+        pool_recycle=1800
+    )
+
     vector_store = PGVector(
         embeddings=embedder, # type: ignore
         collection_name=f"custom_{user_id}_{selected_embedder.replace('-', '_')}",
-        connection=user_db_url.replace("postgresql://", "postgresql+psycopg://"),
+        connection=async_db_engine,
         use_jsonb=True,
         async_mode=True,
     )

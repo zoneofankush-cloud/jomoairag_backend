@@ -19,7 +19,7 @@ async def test_s3():
             aws_access_key_id=ACCESS_KEY_ID,
             aws_secret_access_key=SECRET_ACCESS_KEY,
             region_name="auto",
-        ) as s3_client:
+        ) as s3_client: # type: ignore
             data = await s3_client.list_objects_v2(Bucket=BUCKET_NAME, Prefix="upload/test")
             print("SUCCESS!", data.get("Contents"))
     except Exception as e:

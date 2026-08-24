@@ -24,6 +24,7 @@ from langchain_classic.storage import create_lc_store
 from langchain_postgres import PGVector
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from fastapi import HTTPException
+from sqlalchemy import create_engine
 
 embedder_model = HuggingFaceEndpointEmbeddings(
         model="BAAI/bge-small-en-v1.5",
@@ -31,10 +32,16 @@ embedder_model = HuggingFaceEndpointEmbeddings(
         huggingfacehub_api_token=hf_token
     )
 
+db_engine = create_engine(
+    DBConnection.replace("postgresql://", "postgresql+psycopg://"),
+    pool_pre_ping=True,
+    pool_recycle=1800
+)
+
 vector_store = PGVector(
         embeddings=embedder_model,
         collection_name="parent_child_collection",
-        connection=DBConnection.replace("postgresql://", "postgresql+psycopg://"),
+        connection=db_engine,
         use_jsonb=True,
     )
 
