@@ -200,7 +200,7 @@ async def User_Embedder(user_id: str = Depends(get_current_user)):
         use_jsonb=True
     )
 
-    raw_store = SQLStore(namespace=f"custom_parent_{user_id}_{selected_embedder.replace('-', '_')}", db_url=user_db_url)
+    raw_store = SQLStore(namespace=f"custom_parent_{user_id}_{selected_embedder.replace('-', '_')}", engine=db_engine)
     Store = create_lc_store(raw_store)
 
     retriever = ParentDocumentRetriever(
@@ -265,7 +265,12 @@ async def User_Retriever(user_id: str = Depends(get_current_user)):
         async_mode=True,
     )
 
-    raw_store = SQLStore(namespace=f"custom_parent_{user_id}_{selected_embedder.replace('-', '_')}", db_url=user_db_url)
+    sync_db_engine = create_engine(
+        user_db_url.replace("postgresql://", "postgresql+psycopg://"),
+        pool_pre_ping=True,
+        pool_recycle=1800
+    )
+    raw_store = SQLStore(namespace=f"custom_parent_{user_id}_{selected_embedder.replace('-', '_')}", engine=sync_db_engine)
     Store = create_lc_store(raw_store)
 
     retriever = ParentDocumentRetriever(

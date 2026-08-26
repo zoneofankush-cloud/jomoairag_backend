@@ -45,7 +45,7 @@ vector_store = PGVector(
         use_jsonb=True,
     )
 
-raw_store = SQLStore(namespace="parent_docs", db_url=DBConnection)
+raw_store = SQLStore(namespace="parent_docs", engine=db_engine)
 Store = create_lc_store(raw_store)
 
 # ==========================

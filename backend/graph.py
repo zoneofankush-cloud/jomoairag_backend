@@ -200,7 +200,6 @@ async def chat_node(state: MessagesState, store: BaseStore, config: RunnableConf
         info = ""
     
     sys_config = {"name": "jomoai", "version": 'v-01', "established": "15 August 2026", "trained by": "Ankush Gautam"}
-    
     sys_msg = SystemMessage(content=f"{str(sys_config)}\nuser_info: \n{info} \n- current_location: {user_location}\n- current_time: {current_time_str}\n{sys}")
     human_msg = HumanMessage(content=human)
     
